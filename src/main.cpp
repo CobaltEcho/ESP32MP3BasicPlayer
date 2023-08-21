@@ -5,7 +5,7 @@
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
 
-// #define SPI_SPEED SD_SCK_MHZ(4)  I dont think this is needed for ESP32
+#define SPI_SPEED SD_SCK_MHZ(4)  // I dont think this is needed for ESP32
 //  SD Card Pins
 #define SCK 18  // GPIO 18
 #define MISO 19 // GPIO 19
@@ -35,13 +35,14 @@ void setup()
 
 #if defined(ESP8266)
   SD.begin(SS, SPI_SPEED);
+  Serial.println("SD initialised on ESP8266.");
 #else
   SD.begin(CS);
   Serial.println("SD initialised.");
 #endif
   dir = SD.open("/");
 
-  // if (!SD.begin(CS, SPI_SPEED)) I dont SPI_SPEED this is needed for ESP32
+  // if (!SD.begin(CS, SPI_SPEED)) I dont think SPI_SPEED is needed for ESP32.  Uncomment this line and comment the next for ESP8266.  I think.
   if (!SD.begin(CS))
   {
     Serial.println("Problem starting SD");
