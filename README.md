@@ -1,5 +1,14 @@
-# ESP32 MP3 Basic Player From SD Card
-ESP32 MP3 Player from SD Card
+# ESP32 WAV (MP3 to come later) Basic Player From SD Card
+ESP32 WAV (MP3 to come later) Basic Player From SD Card
 
 Using the ESP8266Audio Library (which is also for ESP32) which can be found at https://github.com/earlephilhower/ESP8266Audio.
-This library incluides the <SD.h> where needed, so you do not need to call that in addition to the calls for the ESP8266Audio libraries.
+
+
+Current Error:
+--- Reopened serial port COM5 ----
+SD card is ready!
+SD Card Size: 3781MB
+FILE: CountryRoadsWav.wav  SIZE: 20 MB
+[  1838][E][vfs_api.cpp:29] open(): CountryRoadsWav.wav does not start with /
+AudioGeneratorWAV::begin: file not open
+End of playback

@@ -1,74 +1,92 @@
-// Play MP3 files from SD Card
-
-#include <Arduino.h>
-#include "AudioFileSourceSD.h"
-#include "AudioGeneratorMP3.h"
-#include "AudioOutputI2S.h"
-
-#define SPI_SPEED SD_SCK_MHZ(4)  // I dont think this is needed for ESP32
-//  SD Card Pins
-#define SCK 18  // GPIO 18
-#define MISO 19 // GPIO 19
-#define MOSI 23 // GPIO 23
-#define CS 2    // GPIO 2
 
 // For amp hookup for speaker:
 // Audio Signal + : Analog Audio Out = Pin GPIO 25 / DAC1
 // Audio Signal - : Ground
 
-File dir;
-AudioOutputI2S *output = NULL;
+
+#include <Arduino.h>
+#include "AudioFileSourceID3.h"
+#include "AudioOutputI2SNoDAC.h"
+#include "AudioGeneratorWAV.h"
+#include "AudioFileSourceSD.h"
+#include "FS.h"
+#include "SD.h"
+#include "SPI.h"
+#include "Audio.h"
+
+//  SPI / SD Card Pins
+#define SCK 18  // GPIO 18
+#define MISO 19 // GPIO 19
+#define MOSI 23 // GPIO 23
+#define CS 2    // GPIO 2
+
 AudioFileSourceSD *source = NULL;
-AudioGeneratorMP3 *decoder = NULL;
-bool first = true;
+AudioGeneratorWAV *wav = NULL;
+AudioOutputI2SNoDAC *out = NULL;
+AudioFileSourceID3 *id3 = NULL;
+
+void playwav(String path)
+{
+  source = new AudioFileSourceSD();
+  source->open(path.c_str());
+  id3 = new AudioFileSourceID3(source);
+  //  id3->RegisterMetadataCB(MDCallback, (void*)"ID3TAG");
+  out = new AudioOutputI2SNoDAC();
+  wav = new AudioGeneratorWAV();
+  wav->begin(id3, out);
+  while (wav->isRunning())
+  {
+    if (!wav->loop())
+      wav->stop();
+  }
+  Serial.println("End of playback");
+  source->close();
+}
 
 void setup()
 {
   Serial.begin(115200);
   Serial.println();
-  delay(1000);
-
-  audioLogger = &Serial;
-  output = new AudioOutputI2S(0, 1); // Using Internal DAC1, Analog Audio on Pin 25
-  source = new AudioFileSourceSD();
-  decoder = new AudioGeneratorMP3();
-
-#if defined(ESP8266)
-  SD.begin(SS, SPI_SPEED);
-  Serial.println("SD initialised on ESP8266.");
-#else
+  delay(1000);  // waits for a second
   SD.begin(CS);
-  Serial.println("SD initialised.");
-#endif
-  dir = SD.open("/");
-
-  // if (!SD.begin(CS, SPI_SPEED)) I dont think SPI_SPEED is needed for ESP32.  Uncomment this line and comment the next for ESP8266.  I think.
   if (!SD.begin(CS))
   {
-    Serial.println("Problem starting SD");
+    Serial.println("Card Mount Failed");
     return;
   }
-  
-}
+  else
+  {
+    Serial.println("SD card is ready!");
+    uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+    Serial.printf("SD Card Size: %lluMB\n", cardSize);
+  }
 
-void loop() {
-  if ((decoder) && (decoder->isRunning())) {
-    if (!decoder->loop()) decoder->stop();
-  } else {
-    File file = dir.openNextFile();
-    if (file) {      
-      if (String(file.name()).endsWith(".mp3")) {
-        source->close();
-        if (source->open(file.name())) { 
-          Serial.printf_P(PSTR("Playing '%s' from SD card...\n"), file.name());
-          decoder->begin(source, output);
-        } else {
-          Serial.printf_P(PSTR("Error opening '%s'\n"), file.name());
-        }
-      } 
-    } else {
-      Serial.println(F("Playback from SD card done\n"));
-      delay(1000);
-    }       
+  File root = SD.open("/");
+  if (!root)
+  {
+    Serial.println("Failed to open directory");
+    return;
+  }
+  if (!root.isDirectory())
+  {
+    Serial.println("Not a directory");
+    return;
+  }
+  File file = root.openNextFile();
+  while (file)
+  {
+    if (String(file.name()).endsWith(".wav"))
+    {
+      Serial.print("FILE: ");
+      Serial.print(file.name());
+      Serial.print("  SIZE: ");
+      Serial.print(file.size() / (1024 * 1024));
+      Serial.println(" MB");
+      playwav(file.name());
+    }
+    file.close();
+    file = root.openNextFile();
   }
 }
+
+void loop(){}
