@@ -622,6 +622,13 @@ void loop() {
 
 #define SD_CardSelect 4      // Define the SD card select pin
 
+//  SPI / SD Card Pins
+// #define SCK 18  // GPIO 18
+// #define MISO 19 // GPIO 19
+// #define MOSI 23 // GPIO 23
+
+// Audio out is pin GPIO 25
+
 File dir;
 AudioFileSourceSD *source = NULL;
 AudioOutputULP *output = NULL;
@@ -635,7 +642,7 @@ void setup() {
 
   audioLogger = &Serial;
   source = new AudioFileSourceSD();
-  output = new AudioOutputULP(1);
+  output = new AudioOutputULP(1);  // ()=stereo (1)=mono
   decoder = new AudioGeneratorWAV();
 
   Serial.println("Initializing SD card...");
